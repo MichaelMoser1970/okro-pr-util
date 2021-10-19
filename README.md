@@ -13,6 +13,7 @@ For the -n option;
 
 For the -u option:
 
+- check that current directory to be in a git tree, find the project name.
 - push the current feature branch
 - wait for continuous integration build to complete
 - download the CI build log and extract the okro build id.
@@ -20,6 +21,7 @@ For the -u option:
 
 For the -w option;
 
+- check that current directory to be in a git tree, find the project name.
 - wait for CI build of top commit to complete
 - download the CI build log and extract the okro build id.
 - make a beep and signal completion of build.

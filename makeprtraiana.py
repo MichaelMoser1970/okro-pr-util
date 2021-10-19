@@ -165,7 +165,7 @@ def init():
     top_commit = cmd.output.rstrip('\n')
 
     if  cmd.run("git branch -r --contains " + top_commit) != 0:
-        print("Error: top commit ", top_commit, "has already been pushed. Nothing new to commit.", cmd.make_error_message())
+        print("Error: top commit ", top_commit, "has not been pushed yet", cmd.make_error_message())
         sys.exit(1)
 
     if cmd.run("git rev-parse --abbrev-ref HEAD") != 0:
@@ -639,7 +639,7 @@ def main():
         show_build_log(url)
 
     build_log  = dump_build_log(url)
-    if cmd_args.okrodir != "":
+    if cmd_args.okrodir != "" and status:
         deploy_build_okro(repo, repo_name + "-" + last_commit_sha_and_comment, repo_root_dir, build_log, cmd_args.okrodir, org, repo_name)
 
     print("*** completed successfully ***")

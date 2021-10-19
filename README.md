@@ -40,8 +40,7 @@ you need to have the ```GITHUB_TOKEN``` environment variable to be set and expor
 
 ## installation
 
-You need pyton3 to be installed
-install the requirement packages:
+You need pyton3 to be installed; also need to install the requirement packages:
     
 - ```pip3 install Github```
 - ```pip3 install websocket-client```

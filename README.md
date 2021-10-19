@@ -1,4 +1,4 @@
-# utility to automate creation of pull requests
+# Utility to automate creation of pull requests
 
 The script ```makeprtraiana.py``` does the following steps:
 

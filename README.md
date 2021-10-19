@@ -44,7 +44,7 @@ You need pyton3 to be installed; also need to install the requirement packages:
     
 - ```pip3 install Github```
 - ```pip3 install websocket-client```
-- ```pip install ruamel.yaml```
+- ```pip3 install ruamel.yaml```
 
 ## help text
 

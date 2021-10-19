@@ -11,6 +11,13 @@ For the -n option;
 - download the CI build log and extract the okro build id.
 - make a beep and signal completion of build.
 
+For the -u option:
+
+- push the current feature branch
+- wait for continuous integration build to complete
+- download the CI build log and extract the okro build id.
+- make a beep and signal completion of build.
+
 For the -w option;
 
 - wait for CI build of top commit to complete

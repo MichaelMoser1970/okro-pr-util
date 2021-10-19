@@ -165,7 +165,7 @@ def init():
     top_commit = cmd.output.rstrip('\n')
 
     if  cmd.run("git branch -r --contains " + top_commit) != 0:
-        print("Error: top commit ", top_commit, "has not been pushed yet", cmd.make_error_message())
+        print("Error: top commit ", top_commit, "has already been pushed. Nothing new to commit.", cmd.make_error_message())
         sys.exit(1)
 
     if cmd.run("git rev-parse --abbrev-ref HEAD") != 0:

@@ -34,7 +34,7 @@ for the ```-d <okro-dir>``` option. (for example: ```-d ~/code/okro-lab/reals/de
     - create okro feature branch,
     - push okro feature branch 
 
-The user still has to review the changes and open a commit.
+The user still has to review the changes and open a PR for okro, by visiting the link.
  
 you need to have the ```GITHUB_TOKEN``` environment variable to be set and exported.
 

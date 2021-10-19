@@ -71,5 +71,6 @@ Push or update a pull request and wait for the continuous integration build to c
   --showlog, -s         show the build log in a bew browser (default: False)
   --okrodir OKRODIR, -d OKRODIR
                         if set: set version of images to project images that are referenced in yamls under this directory (default: )
+  --tabs TABS, -t TABS  if set: convert tab characters to specified amount of spaces for yaml files in okro. (default: 4)
   --verbose, -v         trace all commands, verbose output (default: False)
 ```

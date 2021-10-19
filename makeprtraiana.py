@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import io
 import os
 import os.path
 import shlex
@@ -317,6 +318,10 @@ This program assumes the github api to be installed - pip install python-github-
     group.add_argument('--okrodir', '-d',  default='', \
             type=str, dest='okrodir', help='if set: set version of images to project images that are referenced in yamls under this directory')
 
+    group.add_argument('--tabs', '-t',  default=4, \
+            type=int, dest='tabs', help='if set: convert tab characters to specified amount of spaces for yaml files in okro.')
+
+
     group.add_argument('--verbose', '-v',  default=False, \
             action='store_true', dest='verbose', help='trace all commands, verbose output')
 
@@ -402,7 +407,7 @@ def extract_build_id(build_log):
     print("okro build id:", build_id)
     return build_id
 
-def deploy_build_okro(repo, commit_msg, repo_root_dir, build_log, okro_dir, org_name, repo_name):
+def deploy_build_okro(repo, commit_msg, repo_root_dir, build_log, okro_dir, org_name, repo_name, tabs):
     okro_file_name = os.path.join(repo_root_dir, "okro.yaml")
     if not os.path.exists( okro_file_name ):
         print("Error: file ", okro_file_name, "does not exist")
@@ -410,7 +415,10 @@ def deploy_build_okro(repo, commit_msg, repo_root_dir, build_log, okro_dir, org_
 
     file_changed = False
     with open(okro_file_name,'r') as yaml_file:
-        obj = yaml.safe_load(yaml_file)
+        detab_string = yaml_file.read().expandtabs(tabs)
+
+        #obj = yaml.safe_load(yaml_file)
+        obj = yaml.safe_load(io.StringIO(detab_string))
         print(str(type(obj)))
         #pprintex.dprint("obj:", obj)
 
@@ -422,7 +430,7 @@ def deploy_build_okro(repo, commit_msg, repo_root_dir, build_log, okro_dir, org_
 
         build_id = extract_build_id(build_log)
 
-        file_changed = deploy_to_okro(okro_dir, org_name, build_id, publications, repo_name)
+        file_changed = deploy_to_okro(okro_dir, org_name, build_id, publications, repo_name, tabs)
 
     if file_changed:
 
@@ -443,7 +451,7 @@ def deploy_build_okro(repo, commit_msg, repo_root_dir, build_log, okro_dir, org_
             print("Error: can't push to remote branch", cmd.make_error_message())
             sys.exit(1)
 
-        print("**please visit url and create okro pull request **")
+        print("**please visit url http://github.com/traiana/okro-lab and create okro pull request **")
         print(cmd.output)
         print("**deploy finished**")
 
@@ -502,19 +510,19 @@ def prepare_deploy(okro_dir):
 
 
 
-def deploy_to_okro(okro_dir, org_name, build_id, publications, repo_name):
+def deploy_to_okro(okro_dir, org_name, build_id, publications, repo_name, tabs):
 
     prepare_deploy(okro_dir)
     file_changed = False
 
     for fname in glob.glob( okro_dir + '/**/*.yaml', recursive=True):
-        if deploy_one_file(fname, org_name, build_id, publications, repo_name):
+        if deploy_one_file(fname, org_name, build_id, publications, repo_name, tabs):
             file_changed = True
     print("repo-name:", repo_name)
     return file_changed
 
 
-def deploy_one_file(fname, org_name, build_id, publications, repo_name):
+def deploy_one_file(fname, org_name, build_id, publications, repo_name, tabs):
     file_changed = False
 
     if RunCommand.trace_on:
@@ -525,7 +533,8 @@ def deploy_one_file(fname, org_name, build_id, publications, repo_name):
         modified = False
 
         with open(fname,"r") as yaml_in:
-            docs = yaml.safe_load_all(yaml_in)
+            detab_string = yaml_in.read().expandtabs(tabs)
+            docs = yaml.safe_load_all(io.StringIO(detab_string))
 
             docs_list = []
             for doc in docs:
@@ -640,7 +649,7 @@ def main():
 
     build_log  = dump_build_log(url)
     if cmd_args.okrodir != "" and status:
-        deploy_build_okro(repo, repo_name + "-" + last_commit_sha_and_comment, repo_root_dir, build_log, cmd_args.okrodir, org, repo_name)
+        deploy_build_okro(repo, repo_name + "-" + last_commit_sha_and_comment, repo_root_dir, build_log, cmd_args.okrodir, org, repo_name, cmd_args.tabs)
 
     print("*** completed successfully ***")
 

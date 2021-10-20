@@ -652,7 +652,7 @@ def main():
     build_log  = dump_build_log(url)
     if cmd_args.okrodir != "" and status:
         deploy_build_okro(repo, repo_name + "-" + last_commit_sha_and_comment, repo_root_dir, build_log, cmd_args.okrodir, org, repo_name, cmd_args.tabs)
-        print("*** deploy to okta completed successfully ***")
+        print("*** deploy to okro completed successfully ***")
 
 if __name__ == '__main__':
     main()

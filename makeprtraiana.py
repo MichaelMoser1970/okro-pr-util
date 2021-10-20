@@ -224,11 +224,13 @@ def wait_for_commit_to_build(repo, commit):
             if RunCommand.trace_on:
                 print( "created_at", status.created_at ,"creator:", status.creator,  " id:", status.id, "state:", status.state, "context:", status.context, "target_url:", status.target_url,  "url:", status.url, "description:", status.description )
 
+            # failure of any stage fails the build
+            if status.state == "failure":
+                return  False, status.target_url
+
             if status.context == "build":
                 if status.state == "success":
                     return  True, status.target_url
-                if status.state == "failure":
-                    return  False, status.target_url
 
         time.sleep(5)
 

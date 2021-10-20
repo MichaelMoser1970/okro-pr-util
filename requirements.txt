@@ -1,4 +1,4 @@
-GitHub
+PyGitHub
 websocket-client
 ruamel.yaml
 

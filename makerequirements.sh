@@ -9,7 +9,7 @@ pip3 install PyGithub
 pip3 install websocket-client
 pip3 install ruamel.yaml
 
-pip3 freeze >requirement.txt
+pip3 freeze >requirements.txt
 
 deactivate req-venv
 rm -rf req-venv

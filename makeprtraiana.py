@@ -152,6 +152,64 @@ def get_remote_origin():
 
     return remote_origin, repo_name
 
+def is_remote_ahead(remote_origin_url, branch_name, local_branch_top_commit):
+    cmd = RunCommand()
+
+    if cmd.run("git ls-remote --heads " + remote_origin_url) != 0:
+        print("Error: can't list remote heads", cmd.make_error_message())
+        sys.exit(1)
+
+    remote_head_commit = None
+    for line in cmd.output.split("\n"):
+        if line != "":
+            columns = line.split('\t')
+            if columns[1] == "refs/heads/" + branch_name:
+                remote_head_commit = columns[0]
+
+    if remote_head_commit is None:
+        print("Error: can't get remote head from: ", cmd.output)
+        sys.exit(1)
+
+    print("local branch top: ",  local_branch_top_commit, "remote branch top:", remote_head_commit)
+
+    if local_branch_top_commit == remote_head_commit:
+        print("local and remote branches are in sync.")
+        return 0
+
+    # check if local branch is ahead; it is if the remote top is contained in the local branch
+    cmd.run("git branch --contains " + remote_head_commit)
+
+    for line in cmd.output.split("\n"):
+        line = line[2:]
+        if line == branch_name:
+            print("local branch is ahead of remote branch")
+            return 1
+
+    print("Error: local and remote branch have diverged. remote top: ", remote_head_commit, " is not contained in local branch ", branch_name)
+    sys.exit(1)
+
+def get_last_tag():
+    cmd = RunCommand()
+
+    if cmd.run("git ls-remote --tags") != 0:
+        print("Error: current list remote tags", cmd.make_error_message())
+        sys.exit(1)
+
+    last_tag = None
+    for line in cmd.output.split("\n").reverse():
+        if line != "":
+            columns = line.split('\t')
+            last_tag = columns[1]
+            break
+
+    if last_tag is not None:
+        prefix = "refs/tags"
+        if last_tag.starswith(prefix):
+            return last_tag[len(prefix):]
+
+    return None
+
+
 def init():
     cmd = RunCommand()
 
@@ -192,7 +250,7 @@ def init():
     last_commit_body = cmd.output
 
     remote_origin, repo_name = get_remote_origin()
-    if repo_name == "okro-lab":
+    if repo_name in ("okro-lab", "okro-staging", "okro-prod"):
         print("Error: curent directory must be in repository other than ", repo_name)
         sys.exit(1)
 
@@ -202,7 +260,8 @@ def init():
             "remote_branch_name: ", remote_branch_name, \
             "last-commit-comment:", last_commit_sha_and_comment, \
             "last-commit-body: ", last_commit_body)
-    return  repo_root_dir, top_commit, repo_name, local_branch_name, remote_branch_name, last_commit_sha_and_comment, last_commit_body
+    return  repo_root_dir, top_commit, repo_name, local_branch_name, remote_branch_name, last_commit_sha_and_comment, last_commit_body, remote_origin
+
 
 
 def wait_for_commit_to_build(repo, commit):
@@ -287,6 +346,10 @@ for the --update-pr option:
     2. The program waits that the continuous integration build for the top commit has completed.
     3. At the end of the build, a sound is played, and the url with the build log is written to standard output.
 
+For the --last-tag option:
+    1. extract the last tag from the remote branch
+    2. use the last tag as the build_id, to be deployed if -w option is specified.
+
 for the --wait option:
     2. The program waits that the continuous integration build for the top commit has completed.
     3. At the end of the build, a sound is played, and the url with the build log is written to standard output.
@@ -301,6 +364,9 @@ This program assumes the github api to be installed - pip install python-github-
                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     group = parse.add_argument_group("Push or update a pull request and wait for the continuous integration build to complete")
+
+    group.add_argument('--last_tag', '-g',  default=False, \
+            action='store_true', dest='use_last_tag', help='deploy the last tag instead of build id of last build')
 
     group.add_argument('--new-pr', '-n',  default=False, \
             action='store_true', dest='new_pr', help='create new pull request')
@@ -409,7 +475,7 @@ def extract_build_id(build_log):
     print("okro build id:", build_id)
     return build_id
 
-def deploy_build_okro(repo, commit_msg, repo_root_dir, build_log, okro_dir, org_name, repo_name, tabs):
+def deploy_build_okro(repo, commit_msg, repo_root_dir, build_id, okro_dir, org_name, repo_name, tabs):
     okro_file_name = os.path.join(repo_root_dir, "okro.yaml")
     if not os.path.exists( okro_file_name ):
         print("Error: file ", okro_file_name, "does not exist")
@@ -429,8 +495,6 @@ def deploy_build_okro(repo, commit_msg, repo_root_dir, build_log, okro_dir, org_
         for image in obj['actions'][0]['publications']['images']:
             print("name: ", image['name'])
             publications.append(image['name'])
-
-        build_id = extract_build_id(build_log)
 
         file_changed = deploy_to_okro(okro_dir, org_name, build_id, publications, repo_name, tabs)
 
@@ -607,7 +671,12 @@ def main():
     if cmd_args.verbose:
         RunCommand.trace_on = True
 
-    repo_root_dir, top_commit, repo_name, local_branch_name, remote_branch_name, last_commit_sha_and_comment, last_commit_body = init()
+    repo_root_dir, top_commit, repo_name, local_branch_name, remote_branch_name, last_commit_sha_and_comment, last_commit_body, remote_origin_url = init()
+
+    status = is_remote_ahead(remote_origin_url, local_branch_name, top_commit)
+    if (cmd_args.new_pr or cmd_args.update_pr) and status == 0:
+        print("Error: Can't update remote, both local and remote are in sync")
+        sys.exit(1)
 
     if not "GITHUB_TOKEN" in os.environ:
         print("Error: GITHUB_TOKEN is no exported.")
@@ -634,25 +703,34 @@ def main():
         push_state_to_branch(remote_branch_name)
     elif cmd_args.wait:
         pass
+    elif cmd_args.use_last_tag:
+        pass
     else:
         print("Error: action not specified")
         sys.exit(1)
 
-    status, url = wait_for_commit_to_build(repo, top_commit)
-    if status:
-        print("\nBuild succeeded! url: ", url)
-        beep(True)
+    if not cmd_args.use_last_tag:
+        status, url = wait_for_commit_to_build(repo, top_commit)
+        if status:
+            print("\nBuild succeeded! url: ", url)
+            beep(True)
+        else:
+            print("\nBuild failed. url: ", url)
+            beep(False)
+
+        if cmd_args.showlog:
+            show_build_log(url)
+
+        build_log  = dump_build_log(url)
+        if cmd_args.okrodir != "" and status:
+            build_id = extract_build_id(build_log)
+            deploy_build_okro(repo, repo_name + "-" + last_commit_sha_and_comment, repo_root_dir, build_id, cmd_args.okrodir, org, repo_name, cmd_args.tabs)
+            print("*** deploy to okro completed successfully ***")
     else:
-        print("\nBuild failed. url: ", url)
-        beep(False)
-
-    if cmd_args.showlog:
-        show_build_log(url)
-
-    build_log  = dump_build_log(url)
-    if cmd_args.okrodir != "" and status:
-        deploy_build_okro(repo, repo_name + "-" + last_commit_sha_and_comment, repo_root_dir, build_log, cmd_args.okrodir, org, repo_name, cmd_args.tabs)
-        print("*** deploy to okro completed successfully ***")
+        build_id = get_last_tag()
+        if cmd_args.okrodir != "" and build_id is not None:
+            print("last remote tag: ", build_id)
+            deploy_build_okro(repo, repo_name + "-deploy-tag-" + build_id, repo_root_dir, build_id, cmd_args.okrodir, org, repo_name, cmd_args.tabs)
 
 if __name__ == '__main__':
     main()

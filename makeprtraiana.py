@@ -196,18 +196,23 @@ def get_last_tag():
         sys.exit(1)
 
     last_tag = None
-    for line in cmd.output.split("\n").reverse():
+    rev_list =  cmd.output.split("\n")
+    rev_list.reverse()
+    for line in rev_list:
         if line != "":
             columns = line.split('\t')
             last_tag = columns[1]
             break
 
     if last_tag is not None:
-        prefix = "refs/tags"
-        if last_tag.starswith(prefix):
+        prefix = "refs/tags/"
+        if last_tag.startswith(prefix):
             return last_tag[len(prefix):]
 
     return None
+
+def is_okro_repo(repo_name):
+    return repo_name in ("okro-lab", "okro-staging", "okro-prod")
 
 
 def init():
@@ -250,9 +255,10 @@ def init():
     last_commit_body = cmd.output
 
     remote_origin, repo_name = get_remote_origin()
-    if repo_name in ("okro-lab", "okro-staging", "okro-prod"):
+    if is_okro_repo(repo_name):
         print("Error: curent directory must be in repository other than ", repo_name)
         sys.exit(1)
+
 
     print("top_commit:", top_commit, \
             "repo_name:", repo_name, \
@@ -536,8 +542,8 @@ def prepare_deploy(okro_dir):
 
     remote_origin, repo_name = get_remote_origin()
 
-    if repo_name != "okro-lab":
-        print("Error: directory ", okro_dir, " is not in okro-lab repository, instead: ", repo_name)
+    if not is_okro_repo(repo_name):
+        print("Error: directory ", okro_dir, " is not in any okro repository, instead: ", repo_name)
         sys.exit(1)
 
     if cmd.run("git rev-parse --abbrev-ref HEAD") != 0:
@@ -728,9 +734,10 @@ def main():
             print("*** deploy to okro completed successfully ***")
     else:
         build_id = get_last_tag()
+        print("last tag:", build_id)
         if cmd_args.okrodir != "" and build_id is not None:
             print("last remote tag: ", build_id)
-            deploy_build_okro(repo, repo_name + "-deploy-tag-" + build_id, repo_root_dir, build_id, cmd_args.okrodir, org, repo_name, cmd_args.tabs)
+            deploy_build_okro(repo, repo_name + "-deploytag-" + build_id, repo_root_dir, build_id, cmd_args.okrodir, org, repo_name, cmd_args.tabs)
 
 if __name__ == '__main__':
     main()

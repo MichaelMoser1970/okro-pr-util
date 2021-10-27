@@ -6,11 +6,12 @@ import os.path
 import shlex
 import subprocess
 import sys
+import random
+import time
 import glob
 import webbrowser
 import re
 import traceback
-import time
 import ssl
 from platform import system
 from pathlib import Path
@@ -482,6 +483,11 @@ def extract_build_id(build_log):
     return build_id
 
 def deploy_build_okro(repo, commit_msg, repo_root_dir, build_id, okro_dir, org_name, repo_name, tabs):
+
+    random.seed(time.time())
+    suffix = random.randint(0,1000)
+    commit_msg += "-" + str(suffix)
+
     okro_file_name = os.path.join(repo_root_dir, "okro.yaml")
     if not os.path.exists( okro_file_name ):
         print("Error: file ", okro_file_name, "does not exist")
@@ -509,8 +515,8 @@ def deploy_build_okro(repo, commit_msg, repo_root_dir, build_id, okro_dir, org_n
         cmd = RunCommand()
 
         if cmd.run("git commit -a -m '" + commit_msg + "'")  != 0:
-             print("Error: can't update master branch", cmd.make_error_message())
-             sys.exit(1)
+            print("Error: can't update master branch", cmd.make_error_message())
+            sys.exit(1)
 
         #print("Creating okro pull request")
         #create_branch_and_pr(repo, "", commit_msg, "")
@@ -725,26 +731,31 @@ def main():
     if not cmd_args.use_last_tag:
         status, url = wait_for_commit_to_build(repo, top_commit)
         if status:
-            print("\nBuild succeeded! url: ", url)
-            beep(True)
+            if cmd_args.okrodir == "":
+                print("\nBuild succeeded! url: ", url)
+                beep(True)
+
+            if cmd_args.showlog:
+                show_build_log(url)
+
+            build_log  = dump_build_log(url)
+            if cmd_args.okrodir != "" and status:
+                build_id = extract_build_id(build_log)
+                deploy_build_okro(repo, repo_name + "-" + last_commit_sha_and_comment, repo_root_dir, build_id, cmd_args.okrodir, org, repo_name, cmd_args.tabs)
+                print("*** deploy to okro completed successfully ***")
+                beep(True)
+
         else:
             print("\nBuild failed. url: ", url)
             beep(False)
 
-        if cmd_args.showlog:
-            show_build_log(url)
-
-        build_log  = dump_build_log(url)
-        if cmd_args.okrodir != "" and status:
-            build_id = extract_build_id(build_log)
-            deploy_build_okro(repo, repo_name + "-" + last_commit_sha_and_comment, repo_root_dir, build_id, cmd_args.okrodir, org, repo_name, cmd_args.tabs)
-            print("*** deploy to okro completed successfully ***")
     else:
         build_id = get_last_tag()
         print("last tag:", build_id)
         if cmd_args.okrodir != "" and build_id is not None:
             print("last remote tag: ", build_id)
             deploy_build_okro(repo, repo_name + "-deploytag-" + build_id, repo_root_dir, build_id, cmd_args.okrodir, org, repo_name, cmd_args.tabs)
+            beep(True)
 
 if __name__ == '__main__':
     main()

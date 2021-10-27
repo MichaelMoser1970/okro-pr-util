@@ -502,7 +502,7 @@ def deploy_build_okro(repo, commit_msg, repo_root_dir, build_id, okro_dir, org_n
             print("name: ", image['name'])
             publications.append(image['name'])
 
-        file_changed = deploy_to_okro(okro_dir, org_name, build_id, publications, repo_name, tabs)
+        file_changed, remote_okro_origin = deploy_to_okro(okro_dir, org_name, build_id, publications, repo_name, tabs)
 
     if file_changed:
 
@@ -523,7 +523,7 @@ def deploy_build_okro(repo, commit_msg, repo_root_dir, build_id, okro_dir, org_n
             print("Error: can't push to remote branch", cmd.make_error_message())
             sys.exit(1)
 
-        print("**please visit url http://github.com/traiana/okro-lab and create okro pull request **")
+        print("**please visit url ", remote_okro_origin, " and create okro pull request **")
         print(cmd.output)
         print("**deploy finished**")
 
@@ -535,6 +535,12 @@ def prepare_deploy(okro_dir):
     cmd = RunCommand()
 
     os.chdir(okro_dir)
+
+    cmd = RunCommand()
+    if cmd.run("git config --get remote.origin.url") != 0:
+        print("Error: can't get remote origin url", cmd.make_error_message(), "in directory:", okro_dir)
+        sys.exit(1)
+    remote_origin = cmd.output.rstrip('\n')
 
     if cmd.run("git rev-parse --show-toplevel" ) != 0:
         print("Error: directory ", okro_dir, " is not part of git tree")
@@ -580,18 +586,19 @@ def prepare_deploy(okro_dir):
         print("Error: can' pull from master branch", cmd.make_error_message())
         sys.exit(1)
 
+    return remote_origin
 
 
 def deploy_to_okro(okro_dir, org_name, build_id, publications, repo_name, tabs):
 
-    prepare_deploy(okro_dir)
+    remote_origin = prepare_deploy(okro_dir)
     file_changed = False
 
     for fname in glob.glob( okro_dir + '/**/*.yaml', recursive=True):
         if deploy_one_file(fname, org_name, build_id, publications, repo_name, tabs):
             file_changed = True
     print("repo-name:", repo_name)
-    return file_changed
+    return file_changed, remote_origin
 
 
 def deploy_one_file(fname, org_name, build_id, publications, repo_name, tabs):

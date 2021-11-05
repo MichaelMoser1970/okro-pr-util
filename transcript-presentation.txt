@@ -1,0 +1,126 @@
+Hello,
+I want to show you a new tool, this tool helps to automate build tasks, as well as some of the okro deployment tasks.
+
+Lets install the tool with git.
+
+    git clone https://github.com/MichaelMoser1970/okro-pr-util.git  ~/prutil
+    ls ~/prutil
+
+The main file here is a python script - makeprtraiana.py, 
+
+First of all: You need to have python3 installed on the system, on the mac you install it as follows:
+	brew install python3
+
+Now let's install the required python packages
+
+        pip3 install -r ~/prutil/requirements.txt
+
+Another requirement: you will need to have a GITHUB authentication token.
+You can create this token on your githbub profile page, I gave the token all possible permissions.
+So you need to have the follwing line, somewhere in your shell profile.
+
+    export GITHUB_TOKEN=put-the-token-here
+
+This exports the environment variable GITHUB_TOKEN
+
+Let's now use the tool to create and deploy a pull request for the user managment project. 
+We are in the root directory of the git repository for this project.
+
+
+Lets add a comment, we will make a pull request with this change.
+
+     git ls-files
+     vim userMgmtService/src/main/java/com/traiana/usermgmt/service/ObjectTransferImpl.java
+
+let's comiit the change
+     git commit -m 'add an important comment'
+
+now let's use the tool to create and deploy the pull request.
+
+~/prutil/makeprtraiana.py --new-pr --okrodir ~/code/okro-lab/realms/dev/rlm-dev-shared/
+
+    Option --new-pr  tells the script to create a new pull request for the current project, 
+    and to wait until the continuous integration build has been completed.
+    The build id is then extracted from the buld log, It will be used in the next stage.
+
+    Option --okrodir will start the deployment of this pr to okro, the okro environment is set with the argument.
+
+Lets do it. (Enter)
+
+    You see that a dot is printed every five seconds, while the build is progressing.
+    Now that takes quite a bit of time, let's examine the actions of the script in more detail:
+
+    The first stage is the build stage, and it consists of the following steps:
+
+    - it first checks that the current directory is part of a project,
+    - it will create a local branch for the pull request  in the current roject.
+    the name of the branch is based on the title of the last commit
+
+      git branch -vv
+
+    - it is pushing the local branch to a feature branch.
+    - it is automatically creating a github pull request request 
+    - it is waiting for the completion of the continuous integration build of that pull request
+    - The next step will be to  download the logs for that build, and to extract the build id.
+      The build id identifies the image to be deployed.
+    - It then continues to parse the okro.yaml file, this file is located in the root directory of the repository, 
+      It has to extract the list of publications that are defined for the project
+
+      Lets look at the okro.yaml file
+
+         vim okro.yaml
+
+      You can see, that there are quite a few publications images defined for this project.
+
+    The second stage deploys the build results to okro, and it consists of the following steps:
+     - We go to the checked out okro deployment projec, given by --okro-dir command line option, and then parse each yaml file from under the directory tree;  
+       Search for yaml files with a repo tag that is referencing the user management project and that is referencing any one of the publications that were listed in the okro.yaml file, 
+       For these files, set the version of the reference, as extracted from the build log of the CI build.
+
+     - Next: a side branch is created, where the name of the branch is again derived from the title of the last commit in the user managment project
+     - the branch is pushed to the okro repository as a feature branch.
+     - Now at that point, the user is required to open a pull request in the web browser. The user has to follow the link displayed in the result of the build step.    
+
+    ....wait a long time .... 
+
+    And now we have to wait for a while...
+
+    It tells us the build id, once the build has finished
+    It lists the publication names, as defined in the okro.yaml file of user managment
+    Now deployment to okro proceeds, it tells us the artifacts that got assigned a new version.
+    Finally a URL has been printed. Let's visit the url.
+
+    Also there we had that sound played at the end of the deployment process, not sure if you can hear that.
+
+---
+STOP IT, NEXT RECORDING GETS THE BROWSER WINDOW
+---
+
+So let's open a pull request, 
+
+Wait for the validation to proceed
+Now it has passed validation, a you can see. Now let's close the pull request, as it just contains the added ommnt.
+
+---
+STOP IT, NEXT RECORDING GETS THE CONSOLE 
+---
+
+Back to the cnsole
+The tool also supports some additional use cases.
+
+~/prutil/makeprtraiana.py -h
+
+- If you are in the master branch of the project, then the script can wait for completion for the top commit of the build in the master branch.
+  That's what the --wait tag is doing.
+  I am using this option to deploy the image of a pr that got merged into the main branch
+
+- if you have created a new release version, then you can also deploy that release to okro, that's what the --last_tag is doing;
+  this option gets the tag of the latest release from the remote repository, and it then gets deployed to in okro, in a similar manner.
+
+Now that's about it, you now got an overview of the build tool.
+I am using it to automate some of the more routine parts of my job at traiana.
+I hope that this tool will also help you with your development task.
+
+Wishing you the best of luck
+Good bye
+

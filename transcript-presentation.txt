@@ -1,5 +1,5 @@
 Hello,
-I want to show you a new tool, this tool helps to automate build tasks, as well as some of the okro deployment tasks.
+I want to show you a new tool, this tool helps to automate build and deployment tasks with okro.
 
 Lets install the tool with git.
 
@@ -11,6 +11,7 @@ The main file here is a python script - makeprtraiana.py,
 First of all: You need to have python3 installed on the system, on the mac you install it as follows:
 	brew install python3
 
+That was quick, as it is already installed on my machine.
 Now let's install the required python packages
 
         pip3 install -r ~/prutil/requirements.txt
@@ -21,11 +22,10 @@ So you need to have the follwing line, somewhere in your shell profile.
 
     export GITHUB_TOKEN=put-the-token-here
 
-This exports the environment variable GITHUB_TOKEN
+This exports the environment variable GITHUB_TOKEN that holds the github token.
 
 Let's now use the tool to create and deploy a pull request for the user managment project. 
 We are in the root directory of the git repository for this project.
-
 
 Lets add a comment, we will make a pull request with this change.
 
@@ -45,7 +45,7 @@ now let's use the tool to create and deploy the pull request.
 
     Option --okrodir will start the deployment of this pr to okro, the okro environment is set with the argument.
 
-Lets do it. (Enter)
+So lets do it. (Enter)
 
     You see that a dot is printed every five seconds, while the build is progressing.
     Now that takes quite a bit of time, let's examine the actions of the script in more detail:
@@ -77,7 +77,7 @@ Lets do it. (Enter)
        Search for yaml files with a repo tag that is referencing the user management project and that is referencing any one of the publications that were listed in the okro.yaml file, 
        For these files, set the version of the reference, as extracted from the build log of the CI build.
 
-     - Next: a side branch is created, where the name of the branch is again derived from the title of the last commit in the user managment project
+     - Next: the script creates a side branch, where the name of the branch is again derived from the title of the last commit in the user managment project
      - the branch is pushed to the okro repository as a feature branch.
      - Now at that point, the user is required to open a pull request in the web browser. The user has to follow the link displayed in the result of the build step.    
 
@@ -117,7 +117,7 @@ The tool also supports some additional use cases.
 - if you have created a new release version, then you can also deploy that release to okro, that's what the --last_tag is doing;
   this option gets the tag of the latest release from the remote repository, and it then gets deployed to in okro, in a similar manner.
 
-Now that's about it, you now got an overview of the build tool.
+Now that's about it, you now got an overview of this utility.
 I am using it to automate some of the more routine parts of my job at traiana.
 I hope that this tool will also help you with your development task.
 

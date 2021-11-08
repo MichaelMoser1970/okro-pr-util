@@ -40,11 +40,23 @@ you need to have the ```GITHUB_TOKEN``` environment variable to be set and expor
 
 ## installation
 
-You need pyton3 to be installed; also need to install the requirement packages:
-    
-- ```pip3 install Github```
-- ```pip3 install websocket-client```
-- ```pip3 install ruamel.yaml```
+Need to have python3 installed
+
+```brew install python3```
+
+Install the script from git
+
+```git clone https://github.com/MichaelMoser1970/okro-pr-util.git  ~/prutil```
+
+Install required python packages
+
+```pip3 install -r ~/prutil/requirements.txt```
+
+Need to define a github token in your github profile page, grant all permissions to the token.
+Set environment variable:
+
+```export GITHUB_TOKEN=put-your-github-token-here```
+
 
 ## help text
 
